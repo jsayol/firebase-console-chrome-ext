@@ -4,9 +4,11 @@
 
 A Chrome extension to add useful enhancements to the Firebase Console.
 
+![](http://i.imgur.com/R3r74s5.gifv)
+
 ## Disclaimer
 
-Neither this extension nor its creators are affiliated with Firebase or Google in any way. **This is not an official Firebase product.**
+**This is not an official Firebase product.** Neither this extension nor its creators are affiliated with Firebase or Google in any way.
 
 ## Installing
 

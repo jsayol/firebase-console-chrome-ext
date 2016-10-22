@@ -1,6 +1,6 @@
 {
   "name": "Firebase Toolbox",
-  "version": "2",
+  "version": "0.0.1",
   "manifest_version": 2,
   "description": "Useful tools to work with the Firebase console.",
   "icons": {

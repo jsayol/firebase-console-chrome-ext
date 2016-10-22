@@ -10,7 +10,7 @@ Neither this extension nor its creators are affiliated with Firebase or Google i
 
 ## Installing
 
-*TODO:* Add a link to the chrome web store after publishin the extension.
+You can [install the extension from the Chrome web store](https://chrome.google.com/webstore/detail/firebase-toolbox/lmdimjlebhlegmkkkfacealihhgfcokn).
 
 ## Authors
 

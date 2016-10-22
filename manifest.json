@@ -1,0 +1,31 @@
+{
+  "name": "Firebase Toolbox",
+  "version": "2",
+  "manifest_version": 2,
+  "description": "Useful tools to work with the Firebase console.",
+  "icons": {
+    "16": "icons/icon_16.png",
+    "48": "icons/icon_48.png",
+    "128": "icons/icon_128.png"
+  },
+  "permissions": [
+    "https://console.firebase.google.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://console.firebase.google.com/*"
+      ],
+      "js": [
+        "lib/mutation-summary.js",
+        "src/inject.js"
+      ]
+    }
+  ],
+  "background": {
+    "scripts": [
+      "src/bg.js"
+    ],
+    "persistent": false
+  }
+}

@@ -26,4 +26,5 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 * [The toolbox icon used inside the extension's logo.](http://www.iconarchive.com/show/beautiful-flat-one-color-icons-by-elegantthemes/toolbox-icon.html)
 * Regarding the Firebase logo:
+
   > Portions of this page are modifications based on work created and [shared by Google](https://developers.google.com/readme/policies/) and used according to terms described in the [Creative Commons 3.0 Attribution License](http://creativecommons.org/licenses/by/3.0/).`

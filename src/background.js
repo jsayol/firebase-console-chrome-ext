@@ -1,5 +1,9 @@
+'use strict';
+
 var inDatabseConsole = false;
 
+// Monitor changes to the tabs where the console is open, in order to
+// decide if we need to start or stop the Mutation Observer.
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
     if (changeInfo && (changeInfo.status == "complete")) {
         if (tab && tab.url) {

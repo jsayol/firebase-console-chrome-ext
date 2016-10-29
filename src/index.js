@@ -19,15 +19,17 @@ chrome.extension.sendMessage({}, response => {
         if (document.readyState === "complete") {
             clearInterval(readyStateCheckInterval);
 
-            let s = document.createElement('script');
-            s.src = chrome.extension.getURL('src/inject.js');
-            s.onload = function() {
-                this.remove();
+            let script = document.createElement('script');
+            script.src = chrome.extension.getURL('src/inject.js');
+
+            script.addEventListener('load', () => {
+                script.remove();
 
                 // The injected script is already loaded so let's send it the extension's URL.
                 FBToolbox.injected.sendMessage('extensionUrl', chrome.extension.getURL(''), false);
-            };
-            document.head.appendChild(s);
+            });
+
+            document.head.appendChild(script);
 
         }
     }, 10);
@@ -35,5 +37,5 @@ chrome.extension.sendMessage({}, response => {
 
 // Listen to messages from the injected script
 document.addEventListener('FBToolboxInjectedMessage', e => {
-    console.log(e.detail);
+    // console.log(e.detail);
 });

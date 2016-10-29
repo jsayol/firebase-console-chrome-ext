@@ -23,9 +23,7 @@
         static _open(data) {
             $injector.invoke($mdDialog => {
                 if (!data.parent) {
-                    data = Object.assign({
-                        parent: angular.element(document.body)
-                    }, data);
+                    data = Object.assign({parent: angular.element(document.body)}, data);
                 }
 
                 $mdDialog.show(data);
@@ -134,14 +132,20 @@
         if ($injector) {
             clearInterval(waitForInjectorInterval);
             $injector.invoke(firebaseService => {
-                firebaseService.getRef('/').then(ref => {
-                    fbRootRef = ref;
+                // If we firebaseService.getRef() too soon then for some reason the database will not
+                // load on the console, and that's bad. As a really terrible hack we delay getting the reference,
+                // hoping that the console has had enough time to do its thing.
+                // TODO: definitely look into a better approach to solve this.
+                setTimeout(() => {
+                    firebaseService.getRef('/').then(ref => {
+                        fbRootRef = ref;
 
-                    // Notify the content script that the firebase reference is ready
-                    document.dispatchEvent(new CustomEvent('FBToolboxInjectedMessage', {
-                        detail: {msg: 'firebase_ready'}
-                    }));
-                });
+                        // Notify the content script that the firebase reference is ready
+                        document.dispatchEvent(new CustomEvent('FBToolboxInjectedMessage', {
+                            detail: {msg: 'firebase_ready'}
+                        }));
+                    });
+                }, 500);
             });
         }
     }, 100);

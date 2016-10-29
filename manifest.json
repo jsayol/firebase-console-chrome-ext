@@ -17,12 +17,10 @@
         "https://console.firebase.google.com/*"
       ],
       "js": [
-        "lib/jquery-3.1.1.slim.min.js",
-        "lib/mutation-summary.js",
+        "lib/js/jquery-3.1.1.slim.min.js",
+        "lib/js/mutation-summary.js",
         "src/fb-toolbox.js",
         "src/fb-toolbox-mutation-handler.js",
-        "src/fb-toolbox-dialog.js",
-        "src/generate-push-key.js",
         "src/index.js"
       ]
     }
@@ -34,6 +32,7 @@
     "persistent": false
   },
   "web_accessible_resources": [
-    "src/dialogs/*"
+    "src/dialogs/*",
+    "src/inject.js"
   ]
 }

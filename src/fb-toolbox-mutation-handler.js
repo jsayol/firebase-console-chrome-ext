@@ -1,23 +1,23 @@
 'use strict';
 
-var FBToolboxMutationHandler = {
-    processSummaries(summaries) {
-        if (!summaries) {
-            return;
-        }
+const FBToolboxMutationHandler = summaries => {
+    if (!summaries) {
+        return;
+    }
 
-        FBToolboxMutationHandler.handleNameInput(summaries[0]);
-        FBToolboxMutationHandler.handleValueInput(summaries[1]);
-        FBToolboxMutationHandler.handleAddChildButton(summaries[2]);
-    },
+    FBToolboxMutationHandler.for.nameInput(summaries[0]);
+    FBToolboxMutationHandler.for.valueInput(summaries[1]);
+    FBToolboxMutationHandler.for.addChildButton(summaries[2]);
+};
 
-    handleNameInput(summary) {
+FBToolboxMutationHandler.for = {
+    nameInput(summary) {
         summary.added.forEach(function (addedElement) {
             var nameInput = $(addedElement);
             var genKeyButton = $('<button></button>')
                 .addClass('md-button md-icon-button fbtoolbox-genpushkey')
                 .attr('title', 'Generate push key')
-                .on('click', FBToolboxMutationHandler.Events.clickOnGeneratePushKey)
+                .on('click', FBToolboxMutationHandler.events.clickOnGeneratePushKey)
                 .append($('<i>create</i>').addClass('material-icons').css({fontSize: '16px'}))
                 .css({
                     margin: '0 4px',
@@ -25,11 +25,11 @@ var FBToolboxMutationHandler = {
                     width: '20px'
                 });
 
-            nameInput.after(genKeyButton).on('keydown', FBToolboxMutationHandler.Events.keypressOnAddingInput);
+            nameInput.after(genKeyButton).on('keydown', FBToolboxMutationHandler.events.keypressOnAddingInput);
 
             // The "Add" button
             var addButton = nameInput.parents('li.data-tree-leaf').next('li.confirm').find('button.confirmBtn');
-            addButton.on('click keydown', {nameInput: nameInput}, FBToolboxMutationHandler.Events.clickOnAddButton);
+            addButton.on('click keydown', {nameInput: nameInput}, FBToolboxMutationHandler.events.clickOnAddButton);
         });
 
         summary.removed.forEach(function (removedElement) {
@@ -40,30 +40,30 @@ var FBToolboxMutationHandler = {
                 var genKeyButton = parentNode.find('button.fbtoolbox-genpushkey');
                 var addButton = nameInput.parents('li.data-tree-leaf').next('li.confirm').find('button.confirmBtn');
 
-                genKeyButton.off('click', FBToolboxMutationHandler.Events.clickOnGeneratePushKey).remove();
-                addButton.off('click keydown', FBToolboxMutationHandler.Events.clickOnAddButton);
+                genKeyButton.off('click', FBToolboxMutationHandler.events.clickOnGeneratePushKey).remove();
+                addButton.off('click keydown', FBToolboxMutationHandler.events.clickOnAddButton);
             }
-            nameInput.off('keydown', FBToolboxMutationHandler.Events.keypressOnAddingInput);
+            nameInput.off('keydown', FBToolboxMutationHandler.events.keypressOnAddingInput);
         });
     },
 
-    handleValueInput(summary) {
+    valueInput(summary) {
         summary.added.forEach(function (addedElement) {
-            $(addedElement).on('keydown', FBToolboxMutationHandler.Events.keypressOnAddingInput);
+            $(addedElement).on('keydown', FBToolboxMutationHandler.events.keypressOnAddingInput);
         });
 
         summary.removed.forEach(function (removedElement) {
-            $(removedElement).off('keydown', FBToolboxMutationHandler.Events.keypressOnAddingInput);
+            $(removedElement).off('keydown', FBToolboxMutationHandler.events.keypressOnAddingInput);
         });
     },
 
-    handleAddChildButton(summary) {
+    addChildButton(summary) {
         summary.added.forEach(function (addedElement) {
             var addChildButton = $(addedElement);
             var genMockDataButton = $('<button></button>')
                 .addClass('md-button md-icon-button fbtoolbox-genmockdata')
                 .attr('title', 'Generate mock data at this location')
-                .on('click', FBToolboxMutationHandler.Events.clickOnGenerateMockData)
+                .on('click', FBToolboxMutationHandler.events.clickOnGenerateMockData)
                 .append($('<i>system_update_alt</i>').addClass('material-icons'));
 
             addChildButton.before(genMockDataButton);
@@ -74,26 +74,26 @@ var FBToolboxMutationHandler = {
             var parentNode = $(summary.getOldParentNode(removedElement));
             if (parentNode) {
                 var genMockDataButton = parentNode.find('button.fbtoolbox-genmockdata');
-                genMockDataButton.off('click', FBToolboxMutationHandler.Events.clickOnGenerateMockData).remove();
+                genMockDataButton
+                    .off('click', FBToolboxMutationHandler.events.clickOnGenerateMockData)
+                    .remove();
             }
         });
     }
 };
 
-FBToolboxMutationHandler.Events = {
+FBToolboxMutationHandler.events = {
     clickOnGeneratePushKey() {
-        var nameInput = this.parentNode.querySelector('input[type=text].nameInput');
-        var valueInput = this.parentNode.querySelector('input[type=text].valueInput');
-
-        nameInput.value = generatePushKey();
-        nameInput.style.width = '175px';
-
-        valueInput.focus();
+        FBToolboxMutationHandler.utils.generatePushKey().then(newKey => {
+            let parent = $(this).parent();
+            parent.find('input[type=text].nameInput').val(newKey);//.css('width', '175px');
+            parent.find('input[type=text].valueInput').focus();
+        });
     },
 
     keypressOnAddingInput(evt, extra) {
         if (!(extra && extra._fromFbToolbox) && (evt.which == 13)) {
-            FBToolboxMutationHandler.Utils.fillEmptyNameInputs(evt);
+            FBToolboxMutationHandler.utils.fillEmptyNameInputs(evt);
         }
     },
 
@@ -101,47 +101,64 @@ FBToolboxMutationHandler.Events = {
         var nameInput = evt.data.nameInput;
         if (!(extra && extra._fromFbToolbox) && ((evt.type != 'keydown') || (evt.which == 13))) {
             var valueInput = nameInput.parent().find('input[type=text].valueInput');
-            FBToolboxMutationHandler.Utils.fillEmptyNameInputs(evt);
+            FBToolboxMutationHandler.utils.fillEmptyNameInputs(evt);
         }
     },
 
     clickOnGenerateMockData(evt) {
-        const dialog = FbToolboxDialog.open('mock-data');
+        FBToolbox.injected.sendMessage('createDialog', {type: 'mockData'}, false);
     }
 };
 
-FBToolboxMutationHandler.Utils = {
+FBToolboxMutationHandler.utils = {
     fillEmptyNameInputs(evt) {
-        var reTrigger = true;
-        var firstWithoutValue = null;
+        let reTrigger = true;
+        let firstWithoutValue = null;
 
-        $('fb-card-drawer-wrapper').find('li.data-tree-leaf.adding .tree-content').each(function () {
-            var treeContent = $(this);
-            var nameInput = treeContent.find('input[type=text].nameInput');
-            var valueInput = treeContent.find('input[type=text].valueInput');
-            var hasName = (nameInput.val().length > 0);
-            var hasValue = (valueInput.val().length > 0) || (valueInput.filter(':visible').length == 0);
-
-            if (!hasName) {
-                nameInput.val(generatePushKey());
-            }
-
-            if (!hasValue) {
-                reTrigger = false;
-
-                if (!firstWithoutValue) {
-                    firstWithoutValue = valueInput;
-                }
-            }
-        });
+        const treeContents = $('fb-card-drawer-wrapper').find('li.data-tree-leaf.adding .tree-content');
+        const countWithoutName = treeContents.find('input[type=text].nameInput').filter((_, ni) => !ni.value).length;
 
         evt.preventDefault();
         evt.stopPropagation();
 
-        if (reTrigger) {
-            $(evt.target).trigger(evt.type, [{_fromFbToolbox: true}])
-        } else {
-            firstWithoutValue.focus();
-        }
+        this.generatePushKeys(countWithoutName).then(newKeys => {
+            treeContents.each(function () {
+                const treeContent = $(this);
+                const nameInput = treeContent.find('input[type=text].nameInput');
+                const valueInput = treeContent.find('input[type=text].valueInput');
+                const hasName = (nameInput.val().length > 0);
+                const hasValue = (valueInput.val().length > 0) || (valueInput.filter(':visible').length == 0);
+
+                if (!hasName) {
+                    nameInput.val(newKeys.shift());
+                }
+
+                if (!hasValue) {
+                    reTrigger = false;
+
+                    if (!firstWithoutValue) {
+                        firstWithoutValue = valueInput;
+                    }
+                }
+            });
+
+            if (reTrigger) {
+                $(evt.target).trigger(evt.type, [{_fromFbToolbox: true}])
+            } else {
+                firstWithoutValue.focus();
+            }
+        });
+    },
+
+    generatePushKeys(count = 1) {
+        return new Promise(resolve => {
+            FBToolbox.injected.sendMessage('generatePushKeys', {count}).then(newKeys => {
+                resolve(newKeys);
+            });
+        });
+    },
+
+    generatePushKey() {
+        return this.generatePushKeys(1).then(newKeys => Promise.resolve(newKeys[0]));
     }
 };

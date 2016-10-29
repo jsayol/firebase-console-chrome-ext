@@ -1,0 +1,23 @@
+<div class="fb-dialog database-dialog" aria-label="Import Data">
+    <console-spinner ng-if="controller.loading"></console-spinner>
+    <md-button aria-label="Close dialog" class="md-icon-button c5e-close-icon" ng-click="closeDialog()">
+        <i class="material-icons">close</i>
+    </md-button>
+    <div class="fb-dialog-header">
+        <div class="fb-dialog-title">Generate mock data</div>
+    </div>
+    <div class="fb-dialog-body-section">
+        <fb-callout fb-mode="aside" fb-type="warning">
+            <fb-callout-message> All data at this location will be overwritten</fb-callout-message>
+        </fb-callout>
+        <div flex layout="row" layout-align="space-between start">
+            The mock data generator form will go here.
+            This doesn't do anything yet.
+        </div>
+    </div>
+    <div class="fb-dialog-actions">
+        <span flex></span>
+        <md-button class="md-secondary" ng-click="closeDialog()"> Cancel</md-button>
+        <md-button class="md-raised md-primary" ng-click="closeDialog()"> Generate</md-button>
+    </div>
+</div>

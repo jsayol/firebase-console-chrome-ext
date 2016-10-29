@@ -9,7 +9,7 @@ class FBToolbox {
                 {element: 'input[type=text].valueInput'},
                 {element: 'button.addBtn.md-icon-button'}
             ],
-            callback: FBToolboxMutationHandler.processSummaries
+            callback: FBToolboxMutationHandler
         });
 
         // And immediately disconnect it until we need it
@@ -36,6 +36,35 @@ class FBToolbox {
 
     stopObserver() {
         // Stop the observer when asked by the background process
-        FBToolboxMutationHandler.processSummaries(this.observer.disconnect());
+        FBToolboxMutationHandler(this.observer.disconnect());
     }
 }
+
+FBToolbox.injected = {
+    // Method to send a message to the injected script and optionally wait for a response.
+    sendMessage(msg, payload = null, expectResponse = true) {
+        const id = Date.now() + '_' + ~~(Math.random() * 1e9);
+        let promise;
+
+        if (expectResponse) {
+            const eventName = 'FBToolboxInjectedResponse_' + id;
+            const doc = $(document);
+            promise = new Promise(resolve => {
+                doc.on(eventName, event => {
+                    doc.off(eventName);
+                    resolve(event.detail);
+                });
+            });
+        } else {
+            promise = Promise.resolve(null);
+        }
+
+        document.dispatchEvent(new CustomEvent('FBToolboxContentMessage', {
+            detail: {id, msg, payload}
+        }));
+
+        return promise;
+    }
+};
+
+

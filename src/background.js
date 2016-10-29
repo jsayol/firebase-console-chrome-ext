@@ -19,3 +19,11 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
         }
     }
 });
+
+// chrome.tabs.executeScript(tabId, {
+//     code: 'window.name = "NG_DEFER_BOOTSTRAP!" + window.name;'
+// }, function () {
+//     // Inject our app's script
+//     chrome.tabs.executeScript(tabId, {file: 'content.js'});
+// });
+

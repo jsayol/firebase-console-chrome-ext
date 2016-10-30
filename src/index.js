@@ -13,24 +13,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 });
 
-// Inject the script when the document is ready
+// Inject the script into the page when the document is ready
 chrome.extension.sendMessage({}, response => {
     const readyStateCheckInterval = setInterval(() => {
         if (document.readyState === "complete") {
             clearInterval(readyStateCheckInterval);
 
-            let script = document.createElement('script');
-            script.src = chrome.extension.getURL('src/inject.js');
-
-            script.addEventListener('load', () => {
-                script.remove();
-
-                // The injected script is already loaded so let's send it the extension's URL.
-                FBToolbox.injected.sendMessage('extensionUrl', chrome.extension.getURL(''), false);
-            });
-
-            document.head.appendChild(script);
-
+            $.getScript(chrome.extension.getURL('src/inject.js'))
+                .done(() => FBToolbox.injected.sendMessage('extensionUrl', chrome.extension.getURL(''), false))
+                .fail(() => console.error('FBToolbox', 'Failed to inject script into the page'));
         }
     }, 10);
 });

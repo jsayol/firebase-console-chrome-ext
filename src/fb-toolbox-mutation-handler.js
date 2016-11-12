@@ -29,7 +29,10 @@ FBToolboxMutationHandler.for = {
 
             // The "Add" button
             var addButton = nameInput.parents('li.data-tree-leaf').next('li.confirm').find('button.confirmBtn');
-            addButton.on('click keydown', {nameInput: nameInput}, FBToolboxMutationHandler.events.clickOnAddButton);
+            if (!addButton.attr('fbtoolbox-evtAttached')) {
+                addButton.attr('fbtoolbox-evtAttached', true);
+                addButton.on('click keydown', {nameInput: nameInput}, FBToolboxMutationHandler.events.clickOnAddButton);
+            }
         });
 
         summary.removed.forEach(function (removedElement) {
@@ -108,6 +111,7 @@ FBToolboxMutationHandler.events = {
     },
 
     clickOnAddButton(evt, extra) {
+        evt.preventDefault();
         var nameInput = evt.data.nameInput;
         if (!(extra && extra._fromFbToolbox) && ((evt.type != 'keydown') || (evt.which == 13))) {
             var valueInput = nameInput.parent().find('input[type=text].valueInput');

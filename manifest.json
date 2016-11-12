@@ -17,11 +17,8 @@
         "https://console.firebase.google.com/*"
       ],
       "js": [
-        // Libraries
         "lib/js/jquery-3.1.1.min.js",
         "lib/js/mutation-summary.js",
-
-        // Own code
         "src/fb-toolbox.js",
         "src/fb-toolbox-mutation-handler.js",
         "src/index.js"

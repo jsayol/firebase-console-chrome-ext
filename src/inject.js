@@ -79,10 +79,10 @@
     FBToolboxDialog.dialogs.mockData = (options) => {
         FBToolboxDialog.getTemplate('mock-data').then(template => {
             const locals = {
-
+                location: options.location
             };
 
-            const controller = ($scope, $mdDialog) => {
+            const controller = ($scope, $mdDialog, location) => {
                 const parseJSON = json => {
                     try {
                         return JSON.parse($scope.jsonSchema);
@@ -90,6 +90,8 @@
                         return null;
                     }
                 };
+
+                $scope.location = location;
 
                 $scope.highlights = null;
 
@@ -188,7 +190,7 @@
                 };
 
                 $scope.generateData = () => {
-                    if (!options.location) {
+                    if (!$scope.location) {
                         throw new Error('Nowhere to set the mock data.')
                     }
 
@@ -199,17 +201,26 @@
                         return;
                     }
 
-                    const generatedData = jsf(schema);
+                    let generatedData;
 
-                    console.log('Setting new mock data at location', options.location);
                     try {
-                        firebaseRootRef.child(options.location).set(generatedData);
-                    } catch (e) {
-                        console.log('FBToolbox', e);
+                        generatedData = jsf(schema);
+                    } catch (_) {
+                        $scope.jsonErrors = true;
+                        return;
                     }
 
-                    $scope.jsonErrors = false;
-                    $scope.closeDialog();
+                    if (generatedData) {
+                        console.log('Setting new mock data at location', $scope.location);
+                        try {
+                            firebaseRootRef.child($scope.location).set(generatedData);
+                        } catch (e) {
+                            console.log('FBToolbox', e);
+                        }
+
+                        $scope.jsonErrors = false;
+                        $scope.closeDialog();
+                    }
                 }
             };
 

@@ -72,7 +72,10 @@ FBToolboxMutationHandler.for = {
                     .on('click', FBToolboxMutationHandler.events.clickOnGenerateMockData)
                     .append($('<i>system_update_alt</i>').addClass('material-icons'));
 
-                removeChildButton.prev().before(genMockDataButton);
+                const prevNode = removeChildButton.prev();
+                const insertBeforeNode = prevNode.prop('tagName') == 'BUTTON' ? prevNode : removeChildButton;
+
+                insertBeforeNode.before(genMockDataButton);
             }
         });
 

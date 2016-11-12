@@ -1,14 +1,7 @@
 {
     'use strict';
 
-    let $injector, $mdDialog, fbService, fbRootRef, extensionUrl;
-
-    const replyToRequest = id => payload =>
-        document.dispatchEvent(new CustomEvent('FBToolboxInjectedResponse_' + id, {
-            detail: payload
-        }));
-
-    const generatePushKeys = ({count = 1}) => Promise.resolve(Array.from({length: count}, () => fbRootRef.push().key()));
+    let $injector, $mdDialog, firebaseService, rulesService, firebaseRootRef, extensionUrl, fakerjs;
 
     const FBToolboxDialog = ({type, data = null}) => {
         if (FBToolboxDialog.dialogs.hasOwnProperty(type)) {
@@ -20,11 +13,7 @@
 
     FBToolboxDialog.show = data => {
         if (!$mdDialog) {
-            throw new Error('It seems we weren\'t able to get $mdDialog');
-        }
-
-        if (!data.parent) {
-            data = Object.assign({parent: angular.element(document.body)}, data);
+            throw new Error('There is no $mdDialog');
         }
 
         $mdDialog.show(data);
@@ -76,7 +65,10 @@
                     $scope.items = items;
                     $scope.closeDialog = function () {
                         $mdDialog.hide();
-                    }
+                    };
+                    setTimeout(() => {
+                        $scope.$evalAsync(() => { $scope.items.push(4); });
+                    }, 2000);
                 };
 
                 FBToolboxDialog.show({template, locals, controller});
@@ -84,32 +76,166 @@
             .catch(err => console.warn('FBToolboxDialog', err));
     };
 
-    FBToolboxDialog.dialogs.mockData = () => {
-        FBToolboxDialog.getTemplate('mock-data')
-            .then(template => {
-                const locals = {};
+    FBToolboxDialog.dialogs.mockData = (options) => {
+        FBToolboxDialog.getTemplate('mock-data').then(template => {
+            const locals = {
 
-                const controller = ($scope, $mdDialog) => {
-                    $scope.closeDialog = function () {
-                        $mdDialog.hide();
+            };
+
+            const controller = ($scope, $mdDialog) => {
+                const parseJSON = json => {
+                    try {
+                        return JSON.parse($scope.jsonSchema);
+                    } catch (_) {
+                        return null;
                     }
                 };
 
-                FBToolboxDialog.show({template, locals, controller});
-            })
-            .catch(err => console.warn('FBToolboxDialog', err));
+                $scope.highlights = null;
+
+                $scope.jsonErrors = false;
+
+                $scope.editorOptions = {
+                    mode: {name: "javascript", json: true}
+                };
+
+                $scope.jsonSchema = JSON.stringify({
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "roomName": {
+                            "type": "string",
+                            "faker": { "random.words": [4] }
+                        },
+                        "users": {
+                            "type": "object",
+                            "minProperties": 5,
+                            "maxProperties": 10,
+                            "additionalPropertiesFormat": "fb-uid",
+                            "additionalProperties": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "faker": "name.findName"
+                                    },
+                                    "age": {
+                                        "faker": { "random.number": [99] }
+                                    },
+                                    "avatar": {
+                                        "faker": "image.avatar"
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "required": [
+                                    "name",
+                                    "age"
+                                ]
+                            }
+                        },
+                        "messages": {
+                            "type": "object",
+                            "minProperties": 10,
+                            "maxProperties": 30,
+                            "additionalPropertiesFormat": "fb-pushkey",
+                            "additionalProperties": {
+                                "type": "object",
+                                "properties": {
+                                    "timestamp": {
+                                        "faker": "date.past"
+                                    },
+                                    "fromUser": {
+                                        "type": "string",
+                                        "format": "fb-uid"
+                                    },
+                                    "text": {
+                                        "faker": "lorem.sentence"
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "required": [
+                                    "timestamp",
+                                    "text"
+                                ]
+                            }
+                        }
+                    },
+                    "required": [
+                        "roomName",
+                        "users",
+                        "messages"
+                    ]
+                }, null, '  ');
+
+                $scope.closeDialog = () => $mdDialog.hide();
+
+                $scope.saveContent = () => null;
+
+                $scope.executeContent = () => null;
+
+                $scope.previewData = () => {
+                    const schema = parseJSON($scope.jsonSchema);
+
+                    if (schema === null) {
+                        $scope.jsonErrors = true;
+                        return;
+                    }
+
+                    $scope.jsonErrors = false;
+
+                    const generatedData = jsf(schema);
+                    const formattedData = JSON.stringify(generatedData, null, '  ');
+                    window.open().document.write(`<pre>${$('<div/>').text(formattedData).html()}</pre>`);
+                };
+
+                $scope.generateData = () => {
+                    if (!options.location) {
+                        throw new Error('Nowhere to set the mock data.')
+                    }
+
+                    const schema = parseJSON($scope.jsonSchema);
+
+                    if (schema === null) {
+                        $scope.jsonErrors = true;
+                        return;
+                    }
+
+                    const generatedData = jsf(schema);
+
+                    console.log('Setting new mock data at location', options.location);
+                    try {
+                        firebaseRootRef.child(options.location).set(generatedData);
+                    } catch (e) {
+                        console.log('FBToolbox', e);
+                    }
+
+                    $scope.jsonErrors = false;
+                    $scope.closeDialog();
+                }
+            };
+
+            FBToolboxDialog.show({template, locals, controller});
+
+        }).catch(err => console.warn('FBToolboxDialog', err));
     };
 
     // Obtaining the database rules for the project.
     // Not using this yet, just saving it here for future reference.
-    // const getDBRules = () => {
-    //     fbService.getToken().then(
-    //         auth => $.get(`${fbService.getUrl(fbs.getNamespace())}/.settings/rules.json?auth=${auth}`, rules => {
-    //             console.log(rules);
-    //         })
-    //     );
-    // };
+    const getDatabaseRules = () => {
+        if (!rulesService) {
+            throw new Error('There is no rulesService');
+        }
 
+        rulesService.getRulesEndpoint_().then(endpoint => $.get(endpoint, rules => {
+            console.log(rules);
+        }));
+    };
+
+    // Return a single push key synchronously
+    const generatePushKeySync = () => firebaseRootRef.push().key();
+
+    // Return a promise with the requested number of push keys
+    const generatePushKeys = ({count = 1}) =>
+        Promise.resolve(Array.from({length: count}, () => generatePushKeySync()));
 
     // Listen to messages from the content script
     document.addEventListener('FBToolboxContentMessage', e => {
@@ -125,7 +251,9 @@
         }
 
         if (promise) {
-            promise.then(replyToRequest(id));
+            promise.then(payload => document.dispatchEvent(new CustomEvent('FBToolboxInjectedResponse_' + id, {
+                detail: payload
+            })));
         }
     });
 
@@ -134,25 +262,40 @@
 
         if ($injector) {
             clearInterval(waitForInjectorInterval);
-            $injector.invoke(['$mdDialog', 'firebaseService', (_$mdDialog, _fbService) => {
-                $mdDialog = _$mdDialog;
-                fbService = _fbService;
 
-                // If we firebaseService.getRef() too soon then for some reason the database will not
-                // load on the console, and that's bad. As a really terrible hack we delay getting the reference,
-                // hoping that the console has had enough time to do its thing.
-                // TODO: definitely look into a better approach to solve this.
-                setTimeout(() => {
-                    fbService.getRef('/').then(ref => {
-                        fbRootRef = ref;
+            $mdDialog = $injector.get('$mdDialog');
+            firebaseService = $injector.get('firebaseService');
+            rulesService = $injector.get('rulesService');
+
+            // If we firebaseService.getRef() too soon then for some reason the database will not
+            // load on the console, and that's bad. As a really terrible hack we delay getting the reference,
+            // hoping that the console has had enough time to do its thing.
+            // TODO: definitely look into a better approach to solve this.
+            setTimeout(() => {
+                firebaseService.getRef()
+                    .then(ref => {
+                        firebaseRootRef = ref;
 
                         // Notify the content script that the injected script is ready
                         document.dispatchEvent(new CustomEvent('FBToolboxInjectedMessage', {
                             detail: {msg: 'ready'}
                         }));
-                    });
-                }, 500);
-            }]);
+                    })
+                    .catch(err => console.warn('FBToolbox', err));
+            }, 1000);
+
         }
     }, 100);
+
+    // Custom JSF format for push keys as property names
+    jsf.format('fb-pushkey', _ => generatePushKeySync());
+
+    // Custom JSF format for auth user IDs as property names
+    jsf.format('fb-uid', gen => gen.faker.random.uuid());
+
+    // Some aliases for the "fb-uid" format
+    jsf.format('fb-uuid', jsf.format('fb-uid'));
+    jsf.format('uid', jsf.format('fb-uid'));
+    jsf.format('uuid', jsf.format('fb-uid'));
+
 }

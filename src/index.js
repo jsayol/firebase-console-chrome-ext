@@ -19,9 +19,13 @@ chrome.extension.sendMessage({}, response => {
         if (document.readyState === "complete") {
             clearInterval(readyStateCheckInterval);
 
-            $.getScript(chrome.extension.getURL('src/inject.js'))
-                .done(() => FBToolbox.injected.sendMessage('extensionUrl', chrome.extension.getURL(''), false))
-                .fail(() => console.error('FBToolbox', 'Failed to inject script into the page'));
+            $.getScript(chrome.extension.getURL('lib/js/json-schema-faker.js'))
+                .done(() => {
+                    $.getScript(chrome.extension.getURL('src/inject.js'))
+                        .done(() => FBToolbox.injected.sendMessage('extensionUrl', chrome.extension.getURL(''), false))
+                        .fail(() => console.error('FBToolbox', 'Failed to inject script into the page'));
+                })
+                .fail(() => console.error('FBToolbox', 'Failed to inject "json-schema-faker.js" into the page'));
         }
     }, 10);
 });

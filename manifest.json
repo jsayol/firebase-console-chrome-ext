@@ -1,6 +1,6 @@
 {
   "name": "Firebase Toolbox",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "manifest_version": 2,
   "description": "Useful tools to enhance the Firebase console.",
   "icons": {
@@ -17,11 +17,17 @@
         "https://console.firebase.google.com/*"
       ],
       "js": [
+        // Libraries
         "lib/js/jquery-3.1.1.min.js",
         "lib/js/mutation-summary.js",
+
+        // Own code
         "src/fb-toolbox.js",
         "src/fb-toolbox-mutation-handler.js",
         "src/index.js"
+      ],
+      "css": [
+        "src/css/styles.css"
       ]
     }
   ],
@@ -32,6 +38,7 @@
     "persistent": false
   },
   "web_accessible_resources": [
+    "lib/js/json-schema-faker.js",
     "src/dialogs/*",
     "src/inject.js"
   ]

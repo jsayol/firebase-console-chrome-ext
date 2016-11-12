@@ -1,0 +1,9 @@
+.fbtoolbox-mockdata-dialog fb-code-editor .CodeMirror {
+    min-width: 500px;
+    line-height: 16px;
+    font-size: 12px;
+}
+
+.fbtoolbox-mockdata-dialog fb-code-editor .CodeMirror-scroll {
+    max-height: 500px;
+}

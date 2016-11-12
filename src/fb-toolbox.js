@@ -7,7 +7,7 @@ class FBToolbox {
             queries: [
                 {element: 'input[type=text].nameInput'},
                 {element: 'input[type=text].valueInput'},
-                {element: 'button.addBtn.md-icon-button'}
+                {element: 'button.removeBtn.md-icon-button'}
             ],
             callback: FBToolboxMutationHandler
         });

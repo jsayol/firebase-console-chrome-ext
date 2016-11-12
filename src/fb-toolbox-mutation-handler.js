@@ -7,7 +7,7 @@ const FBToolboxMutationHandler = summaries => {
 
     FBToolboxMutationHandler.for.nameInput(summaries[0]);
     FBToolboxMutationHandler.for.valueInput(summaries[1]);
-    FBToolboxMutationHandler.for.addChildButton(summaries[2]);
+    FBToolboxMutationHandler.for.removeChildButton(summaries[2]);
 };
 
 FBToolboxMutationHandler.for = {
@@ -57,16 +57,23 @@ FBToolboxMutationHandler.for = {
         });
     },
 
-    addChildButton(summary) {
+    removeChildButton(summary) {
         summary.added.forEach(function (addedElement) {
-            var addChildButton = $(addedElement);
-            var genMockDataButton = $('<button></button>')
-                .addClass('md-button md-icon-button fbtoolbox-genmockdata')
-                .attr('title', 'Generate mock data at this location')
-                .on('click', FBToolboxMutationHandler.events.clickOnGenerateMockData)
-                .append($('<i>system_update_alt</i>').addClass('material-icons'));
+            const removeChildButton = $(addedElement);
+            const locationLink = removeChildButton.parent().find('span a').attr('href');
 
-            addChildButton.before(genMockDataButton);
+            if (locationLink) {
+                const location = locationLink.replace(/^project\/([^\/]+)\/database\/data/, '');
+
+                const genMockDataButton = $('<button></button>')
+                    .addClass('md-button md-icon-button fbtoolbox-genmockdata')
+                    .attr('title', 'generate mock data at this location')
+                    .attr('data-location', location)
+                    .on('click', FBToolboxMutationHandler.events.clickOnGenerateMockData)
+                    .append($('<i>system_update_alt</i>').addClass('material-icons'));
+
+                removeChildButton.prev().before(genMockDataButton);
+            }
         });
 
         summary.removed.forEach(function (removedElement) {
@@ -106,7 +113,13 @@ FBToolboxMutationHandler.events = {
     },
 
     clickOnGenerateMockData(evt) {
-        FBToolbox.injected.sendMessage('createDialog', {type: 'mockData'}, false);
+        const payload = {
+            type: 'mockData',
+            data: {
+                location: $(this).attr('data-location')
+            }
+        };
+        FBToolbox.injected.sendMessage('createDialog', payload, false);
     }
 };
 

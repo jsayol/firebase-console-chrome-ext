@@ -1,4 +1,4 @@
-<div class="fb-dialog database-dialog" aria-label="Import Data">
+<div class="fb-dialog database-dialog fbtoolbox-mockdata-dialog" aria-label="Generate Mock Data">
     <console-spinner ng-if="controller.loading"></console-spinner>
     <md-button aria-label="Close dialog" class="md-icon-button c5e-close-icon" ng-click="closeDialog()">
         <i class="material-icons">close</i>
@@ -10,14 +10,23 @@
         <fb-callout fb-mode="aside" fb-type="warning">
             <fb-callout-message> All data at this location will be overwritten</fb-callout-message>
         </fb-callout>
-        <div flex layout="row" layout-align="space-between start">
-            The mock data generator form will go here.
-            This doesn't do anything yet.
-        </div>
+        <label>
+            JSON Schema
+            <a class="material-icons" target="_blank"
+               href="https://github.com/json-schema-faker/json-schema-faker#table-of-contents"
+               style="font-size: 1em;">help</a>
+        </label>
+        <fb-callout ng-if="jsonErrors" fb-type="warning" style="margin: 0;">
+            <fb-callout-message> Your JSON Schema contains errors</fb-callout-message>
+        </fb-callout>
+        <fb-code-editor fb-on-save="saveContent()" fb-on-execute="executeContent()" fb-highlights="highlights"
+                        fb-options="editorOptions" ng-model="jsonSchema">
+        </fb-code-editor>
     </div>
     <div class="fb-dialog-actions">
         <span flex></span>
         <md-button class="md-secondary" ng-click="closeDialog()"> Cancel</md-button>
-        <md-button class="md-raised md-primary" ng-click="closeDialog()"> Generate</md-button>
+        <md-button class="md-raised md-secondary" ng-click="previewData()"> Preview</md-button>
+        <md-button class="md-raised md-primary" ng-click="generateData()"> Generate</md-button>
     </div>
 </div>

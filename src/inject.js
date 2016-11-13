@@ -1,7 +1,7 @@
 {
     'use strict';
 
-    let $injector, $mdDialog, firebaseService, rulesService, firebaseRootRef, extensionUrl, fakerjs;
+    let $injector, consoleContextService, $mdDialog, firebaseService, rulesService, firebaseRootRef, extensionUrl, fakerjs;
 
     const FBToolboxDialog = ({type, data = null}) => {
         if (FBToolboxDialog.dialogs.hasOwnProperty(type)) {
@@ -32,7 +32,7 @@
             const req = new XMLHttpRequest();
             const url = `${extensionUrl}src/dialogs/${type}.html`;
 
-            req.addEventListener('load', () => {
+            req.addEventListener('load', _ => {
                 if ((req.status >= 200) && (req.status < 300)) {
                     FBToolboxDialog.templateCache[type] = req.responseText;
                     resolve(req.responseText);
@@ -41,7 +41,7 @@
                 }
             });
 
-            req.addEventListener('error', () => {
+            req.addEventListener('error', _ => {
                 reject(`Error while retrieving the template for dialog '${type}'`);
             });
 
@@ -55,7 +55,7 @@
 
     FBToolboxDialog.dialogs = {};
 
-    FBToolboxDialog.dialogs.demo = () => {
+    FBToolboxDialog.dialogs.demo = _ => {
         // Just a demo dialog to have as a reference on how to pass data into the dialog's controller.
         // This will get removed soon.
         FBToolboxDialog.getTemplate('demo')
@@ -66,8 +66,8 @@
                     $scope.closeDialog = function () {
                         $mdDialog.hide();
                     };
-                    setTimeout(() => {
-                        $scope.$evalAsync(() => { $scope.items.push(4); });
+                    setTimeout(_ => {
+                        $scope.$evalAsync(_ => { $scope.items.push(4); });
                     }, 2000);
                 };
 
@@ -168,13 +168,13 @@
                     ]
                 }, null, '  ');
 
-                $scope.closeDialog = () => $mdDialog.hide();
+                $scope.closeDialog = _ => $mdDialog.hide();
 
-                $scope.saveContent = () => null;
+                $scope.saveContent = _ => null;
 
-                $scope.executeContent = () => null;
+                $scope.executeContent = _ => null;
 
-                $scope.previewData = () => {
+                $scope.previewData = _ => {
                     const schema = parseJSON($scope.jsonSchema);
 
                     if (schema === null) {
@@ -189,7 +189,7 @@
                     window.open().document.write(`<pre>${$('<div/>').text(formattedData).html()}</pre>`);
                 };
 
-                $scope.generateData = () => {
+                $scope.generateData = _ => {
                     if (!$scope.location) {
                         throw new Error('Nowhere to set the mock data.')
                     }
@@ -211,11 +211,11 @@
                     }
 
                     if (generatedData) {
-                        console.log('Setting new mock data at location', $scope.location);
+                        // console.log('Setting new mock data at location', $scope.location);
                         try {
                             firebaseRootRef.child($scope.location).set(generatedData);
                         } catch (e) {
-                            console.log('FBToolbox', e);
+                            // console.log('FBToolbox', e);
                         }
 
                         $scope.jsonErrors = false;
@@ -231,32 +231,60 @@
 
     // Obtaining the database rules for the project.
     // Not using this yet, just saving it here for future reference.
-    const getDatabaseRules = () => {
+    const getDatabaseRules = _ => {
         if (!rulesService) {
             throw new Error('There is no rulesService');
         }
 
         rulesService.getRulesEndpoint_().then(endpoint => $.get(endpoint, rules => {
-            console.log(rules);
+            // console.log(rules);
         }));
     };
 
     // Return a single push key synchronously
-    const generatePushKeySync = () => firebaseRootRef.push().key();
+    const generatePushKeySync = _ => firebaseRootRef.push().key();
 
     // Return a promise with the requested number of push keys
     const generatePushKeys = ({count = 1}) =>
-        Promise.resolve(Array.from({length: count}, () => generatePushKeySync()));
+        Promise.resolve(Array.from({length: count}, _ => generatePushKeySync()));
+
+    const inProject = _ => {
+        if (!$injector) {
+            console.error('No $injector');
+            return;
+        }
+
+        // console.log('inProject: initializing');
+
+        rulesService = $injector.get('rulesService');
+        firebaseService = $injector.get('firebaseService');
+
+        // If we firebaseService.getRef() too soon then for some reason the database will not
+        // load on the console, and that's bad. As a really terrible hack we delay getting the reference,
+        // hoping that the console has had enough time to do its thing.
+        // TODO: definitely look into a better approach to solve this, ffs.
+        setTimeout(() => {
+            firebaseService.getRef()
+                .then(ref => { firebaseRootRef = ref; })
+                .catch(err => console.warn('FBToolbox', err));
+        }, 1000);
+
+    };
+
 
     // Listen to messages from the content script
     document.addEventListener('FBToolboxContentMessage', e => {
         let {id, msg, payload = null} = e.detail;
         let promise;
 
+        // console.log('Received FBToolboxContentMessage', msg);
+
         if (msg == 'extensionUrl') {
             extensionUrl = payload;
         } else if (msg == 'createDialog') {
             FBToolboxDialog(payload);
+        } else if (msg == 'inProject') {
+            inProject();
         } else if (msg == 'generatePushKeys') {
             promise = generatePushKeys(payload);
         }
@@ -268,33 +296,19 @@
         }
     });
 
-    const waitForInjectorInterval = setInterval(() => {
+    const waitForInjectorInterval = setInterval(_ => {
         $injector = angular.element(document).injector();
 
         if ($injector) {
             clearInterval(waitForInjectorInterval);
 
+            consoleContextService = $injector.get('consoleContextService');
             $mdDialog = $injector.get('$mdDialog');
-            firebaseService = $injector.get('firebaseService');
-            rulesService = $injector.get('rulesService');
 
-            // If we firebaseService.getRef() too soon then for some reason the database will not
-            // load on the console, and that's bad. As a really terrible hack we delay getting the reference,
-            // hoping that the console has had enough time to do its thing.
-            // TODO: definitely look into a better approach to solve this.
-            setTimeout(() => {
-                firebaseService.getRef()
-                    .then(ref => {
-                        firebaseRootRef = ref;
-
-                        // Notify the content script that the injected script is ready
-                        document.dispatchEvent(new CustomEvent('FBToolboxInjectedMessage', {
-                            detail: {msg: 'ready'}
-                        }));
-                    })
-                    .catch(err => console.warn('FBToolbox', err));
-            }, 1000);
-
+            // Notify the content script that the injected script is ready
+            document.dispatchEvent(new CustomEvent('FBToolboxInjectedMessage', {
+                detail: {msg: 'ready'}
+            }));
         }
     }, 100);
 

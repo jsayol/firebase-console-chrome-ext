@@ -126,7 +126,7 @@ FBToolboxMutationHandler.events = {
                 location: $(this).attr('data-location')
             }
         };
-        FBToolbox.injected.sendMessage('createDialog', payload, false);
+        fbToolbox.sendMessageToInjected('createDialog', payload, false);
     }
 };
 
@@ -172,7 +172,7 @@ FBToolboxMutationHandler.utils = {
 
     generatePushKeys(count = 1) {
         return new Promise(resolve => {
-            FBToolbox.injected.sendMessage('generatePushKeys', {count}).then(newKeys => {
+            fbToolbox.sendMessageToInjected('generatePushKeys', {count}).then(newKeys => {
                 resolve(newKeys);
             });
         });
